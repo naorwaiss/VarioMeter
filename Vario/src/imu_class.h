@@ -18,13 +18,6 @@ struct vec3 {
     float z;
 };
 
-struct imu_data_t {
-    vec16 accel_raw;
-    vec16 gyro_raw;
-    vec3 accel;
-    vec3 gyro;
-};
-
 typedef struct
 {
     float roll;
@@ -32,18 +25,25 @@ typedef struct
     float yaw;
 } atitude_t;
 
-typedef struct
-{
+
+struct imu_data_t {
+    vec16 accel_raw;
+    vec16 gyro_raw;
+    vec3 accel;
+    vec3 gyro;
+    atitude_t angles;
     vec3 gravity;
-    float norm_gravity;
-    float norm_accel;
-} step_t;
+    float gravity_dir;
+};
+
+
+
 
 using namespace Eigen;  // Eigen related statement; simplifies syntax for declaration of matrices
 
 class IMU {
    public:
-    IMU(double dt_sec, float beta);
+    IMU(double dt_hz, float beta);
     imu_data_t imu_data;
     void initialize_imu();
     void imu_read();
@@ -52,7 +52,8 @@ class IMU {
     void mainIMU();
     void get_gravity();
     Matrix3f DOM;
-    atitude_t angles;
+    double _dt_hz;
+    float _dt_sec;
 
    private:
     MPU6050 imu_instance;
@@ -62,13 +63,11 @@ class IMU {
     const float ACCEL_SCALE = 9.81f / 8192.0f;    // Convert to m/s² (8192 LSB/g)
     const float GYRO_SCALE = 0.0174533f / 65.5f;  // Convert to rad/s (65.5 LSB/(°/s))
 
-    double dt_sec;
     float q0 = 1.0f;
     float q1 = 0.0f;
     float q2 = 0.0f;
     float q3 = 0.0f;
     float _beta;
-    float _sample_hz;
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "src/Gps_class.h"
 #include "src/ElapsedTimer.h"
 #include "src/Baro_class.h"
+#include "src/kalman.h"
 
 #define IMU_TIME 200
 #define BARO_TIME 64
@@ -15,7 +16,7 @@ ElapsedTimer baro_timer(BARO_TIME);
 IMU imu(IMU_TIME, 0.7f);
 GPS gps(GPS_TIME);  // Using Serial for GPS
 Baro baro;  // Assuming you have a Baro class defined
-
+Kalman filter(&gps, &baro, &imu);  // Pass addresses of the objects
 
 void setup() {
     Serial.begin(115200);  // Debug serial
@@ -23,6 +24,7 @@ void setup() {
     gps.initialize_gps();
     imu.initialize_imu();
     baro.initialize_baro();  // Initialize the barometer
+    filter.initialize();
 }
 
 void loop() {
@@ -33,6 +35,7 @@ void loop() {
 
     if (gps_timer.hasElapsed()) {
         gps.read_gps();
+        filter.main_kalman();
         gps_timer.reset();
     }
 

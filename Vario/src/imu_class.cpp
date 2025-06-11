@@ -1,9 +1,9 @@
 #include "imu_class.h"
 
-IMU::IMU(double dt_sec, float beta) {
-    this->dt_sec = dt_sec;
+IMU::IMU(double dt_hz, float beta) {
+    this->_dt_hz = dt_hz;
     this->_beta = beta;
-    this->_sample_hz = 1.0f / dt_sec;
+    this->_dt_sec = 1.0f / dt_hz;
 }
 
 void IMU::initialize_imu() {
@@ -12,6 +12,7 @@ void IMU::initialize_imu() {
     imu_instance.setFullScaleGyroRange(MPU6050_GYRO_FS_2000); // Set gyroscope full scale to ±1000°/s
     imu_instance.CalibrateAccel();
     imu_instance.CalibrateGyro();
+    
 
     if (!imu_instance.testConnection()) {
         Serial.println("MPU6050 connection failed");
@@ -85,10 +86,10 @@ void IMU::updateMagick(float gx, float gy, float gz, float ax, float ay, float a
         qDot4 -= _beta * s3;
     }
 
-    q0 += qDot1 * dt_sec;
-    q1 += qDot2 * dt_sec;
-    q2 += qDot3 * dt_sec;
-    q3 += qDot4 * dt_sec;
+    q0 += qDot1 * _dt_sec;
+    q1 += qDot2 * _dt_sec;
+    q2 += qDot3 * _dt_sec;
+    q3 += qDot4 * _dt_sec;
 
     // Normalise quaternion
     recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
@@ -100,9 +101,9 @@ void IMU::updateMagick(float gx, float gy, float gz, float ax, float ay, float a
 }
 
 void IMU::computeAngles() {
-    angles.roll = atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2) * 57.29578;
-    angles.pitch = asinf(-2.0f * (q1 * q3 - q0 * q2)) * 57.29578;
-    angles.yaw = atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3) * 57.29578 + 180.0f;
+    imu_data.angles.roll = atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2) * 57.29578;
+    imu_data.angles.pitch = asinf(-2.0f * (q1 * q3 - q0 * q2)) * 57.29578;
+    imu_data.angles.yaw = atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3) * 57.29578 + 180.0f;
     anglesComputed = 1;
 }
 
@@ -119,9 +120,9 @@ float IMU::invSqrt(float x) {
 
 void IMU::get_gravity() {
     atitude_t euiler_rad;
-    euiler_rad.roll = angles.roll * M_PI / 180.0;
-    euiler_rad.pitch = angles.pitch * M_PI / 180.0;
-    euiler_rad.yaw = angles.yaw * M_PI / 180.0;
+    euiler_rad.roll = imu_data.angles.roll * M_PI / 180.0;
+    euiler_rad.pitch = imu_data.angles.pitch * M_PI / 180.0;
+    euiler_rad.yaw = imu_data.angles.yaw * M_PI / 180.0;
     DOM(0, 0) = cos(euiler_rad.pitch);
     DOM(0, 1) = sin(euiler_rad.pitch) * sin(euiler_rad.roll);
     DOM(0, 2) = sin(euiler_rad.pitch) * cos(euiler_rad.roll);
@@ -134,9 +135,7 @@ void IMU::get_gravity() {
 
     Vector3f gravity_der = DOM.transpose() * Vector3f(0.0, 0.0, -1);
     Vector3f acc_data = Vector3f(imu_data.accel.x, imu_data.accel.y, imu_data.accel.z);
-    float acc_gravity_dir = gravity_der.dot(acc_data);
-    float norm = gravity_der.norm();
-    // Calculate gravity vector from Euler angles
+    imu_data.gravity_dir = gravity_der.dot(acc_data);
 }
 
 void IMU::mainIMU() {

@@ -1,3 +1,6 @@
+#ifndef BARO_CLASS_H
+#define BARO_CLASS_H
+
 #include <Adafruit_Sensor.h>
 #include <Adafruit_DPS310.h>
 
@@ -15,3 +18,5 @@ class Baro {
   private:
     Adafruit_DPS310 baro;
 };
+
+#endif // BARO_CLASS_H

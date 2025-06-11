@@ -14,6 +14,9 @@ struct gps_data_t {
     float latitude;
     float longitude;
     float altitude;
+    float pre_altitude;
+    float previous_altitude;
+    float altitude_speed;
     float speed;
     float heading;
     float year;
