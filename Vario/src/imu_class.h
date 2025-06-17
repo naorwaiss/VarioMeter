@@ -25,7 +25,6 @@ typedef struct
     float yaw;
 } atitude_t;
 
-
 struct imu_data_t {
     vec16 accel_raw;
     vec16 gyro_raw;
@@ -33,11 +32,8 @@ struct imu_data_t {
     vec3 gyro;
     atitude_t angles;
     vec3 gravity;
-    float gravity_dir;
+    float gravity_dir_normlize;
 };
-
-
-
 
 using namespace Eigen;  // Eigen related statement; simplifies syntax for declaration of matrices
 

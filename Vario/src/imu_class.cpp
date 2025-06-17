@@ -8,11 +8,10 @@ IMU::IMU(double dt_hz, float beta) {
 
 void IMU::initialize_imu() {
     imu_instance.initialize();
-    imu_instance.setFullScaleAccelRange(MPU6050_ACCEL_FS_4);  // Set accelerometer full scale to ±8g
-    imu_instance.setFullScaleGyroRange(MPU6050_GYRO_FS_2000); // Set gyroscope full scale to ±1000°/s
+    imu_instance.setFullScaleAccelRange(MPU6050_ACCEL_FS_4);   // Set accelerometer full scale to ±8g
+    imu_instance.setFullScaleGyroRange(MPU6050_GYRO_FS_2000);  // Set gyroscope full scale to ±1000°/s
     imu_instance.CalibrateAccel();
     imu_instance.CalibrateGyro();
-    
 
     if (!imu_instance.testConnection()) {
         Serial.println("MPU6050 connection failed");
@@ -135,7 +134,7 @@ void IMU::get_gravity() {
 
     Vector3f gravity_der = DOM.transpose() * Vector3f(0.0, 0.0, -1);
     Vector3f acc_data = Vector3f(imu_data.accel.x, imu_data.accel.y, imu_data.accel.z);
-    imu_data.gravity_dir = gravity_der.dot(acc_data);
+    imu_data.gravity_dir_normlize = (gravity_der.dot(acc_data) / 9.81) + 1;
 }
 
 void IMU::mainIMU() {

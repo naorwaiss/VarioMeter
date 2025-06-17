@@ -28,6 +28,7 @@ void GPS::read_gps() {
             _gps_data.hour = _myGPS.getHour();
             _gps_data.minute = _myGPS.getMinute();
             _gps_data.second = _myGPS.getSecond();
+            _gps_data.Vdop = _myGPS.getVerticalDOP();
             _gps_data.altitude_speed = (_gps_data.altitude - _gps_data.pre_altitude) / _dt_sec;
             _gps_data.pre_altitude = _gps_data.altitude;
         }   

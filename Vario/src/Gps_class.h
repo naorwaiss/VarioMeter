@@ -25,6 +25,7 @@ struct gps_data_t {
     float hour;
     float minute;
     float second;
+    float Vdop;
 };
 
 class GPS {
