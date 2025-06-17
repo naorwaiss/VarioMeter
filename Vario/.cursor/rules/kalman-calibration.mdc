@@ -1,0 +1,123 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Kalman Filter Dynamic Calibration Guide
+
+## Current Implementation
+
+The Kalman filter uses dynamic calibration of process noise (Q) and measurement noise (R) based on sensor states and measurements.
+
+### States
+```cpp
+enum class Q_R {
+    PREDICT = 1,  // When IMU indicates movement
+    UPDATE = 2    // When IMU indicates stability
+};
+
+enum class BARO_GPS {
+    BARO = 1,  // Using barometer as primary sensor
+    GPS = 2    // Using GPS as primary sensor
+};
+```
+
+### Dynamic Calibration Process
+
+1. **State Detection**:
+   - Q_R state switches based on IMU gravity direction:
+     - PREDICT: When |gravity_dir| > 0.8 (significant movement)
+     - UPDATE: When |gravity_dir| < 0.8 (stable)
+
+2. **Noise Adjustment**:
+   - In PREDICT state:
+     - Q decreases (combine_cov *= 0.99)
+     - R increases (R_factor *= 1.01)
+   - In UPDATE state:
+     - Q increases (combine_cov *= 1.01)
+     - R decreases (R_factor *= 0.99)
+
+3. **Sensor Selection**:
+   - GPS preferred when satellites > 10
+   - Barometer preferred otherwise
+   - R values adjusted based on selected sensor
+
+## Suggested Improvements
+
+1. **Adaptive Learning Rate**:
+```cpp
+float learning_rate = 0.01f * (1.0f + abs(imu->gravity_dir_normlize));
+combine_cov *= (1.0f + learning_rate * (Q_R_state == Q_R::PREDICT ? -1.0f : 1.0f));
+```
+
+2. **Velocity-Based Adjustment**:
+```cpp
+if (abs(x(1)) < 0.1f) {  // Near zero velocity
+    R_factor *= 0.95f;   // More aggressive measurement trust
+} else {
+    R_factor *= 1.05f;   // More aggressive prediction trust
+}
+```
+
+3. **GPS Quality Integration**:
+```cpp
+float gps_quality = 1.0f / (1.0f + _gps->_gps_data.Vdop / 100.0f);
+R_gps = base_gps_noise * (1.0f + (1.0f - gps_quality));
+```
+
+4. **Barometer Stability Check**:
+```cpp
+float baro_stability = abs(baro->baro_data.altitude_speed) < 0.1f ? 0.8f : 1.2f;
+R_baro *= baro_stability;
+```
+
+## Calibration Parameters
+
+### Initial Values
+```cpp
+R_baro = 0.05f;    // Base barometer noise
+R_gps = 1.0f;      // Base GPS noise
+combine_cov = 0.01f; // Base process noise
+R_factor = 1.0f;    // Dynamic adjustment factor
+```
+
+### Constraints
+```cpp
+R_baro: [0.001f, 0.1f]    // Barometer noise bounds
+R_gps: [0.01f, 1.0f]      // GPS noise bounds
+combine_cov: [0.0001f, 0.1f] // Process noise bounds
+```
+
+## Usage Guidelines
+
+1. **Initialization**:
+   - Start with conservative noise values
+   - Allow 5-10 seconds for initial convergence
+   - Monitor R_factor for stability
+
+2. **Tuning Process**:
+   - Adjust base noise values based on sensor characteristics
+   - Fine-tune learning rates based on expected dynamics
+   - Monitor velocity estimates for drift
+
+3. **Performance Indicators**:
+   - Stable velocity when stationary
+   - Quick response to altitude changes
+   - Smooth transitions between sensors
+
+## Common Issues and Solutions
+
+1. **Velocity Drift**:
+   - Increase R_factor constraints
+   - Add velocity-based Q adjustment
+   - Implement stronger zero-velocity detection
+
+2. **Slow Response**:
+   - Increase learning rate
+   - Reduce R values
+   - Adjust Q_R state thresholds
+
+3. **Oscillations**:
+   - Decrease learning rate
+   - Increase R values
+   - Add smoothing to state transitions
