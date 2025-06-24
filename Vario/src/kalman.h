@@ -84,12 +84,12 @@ class Kalman {
     Vector2f x;    // State vector
     MeanFilter velocityFilter;  // Mean filter for velocity smoothing
     MeanFilter imu_filter;
-
-
-   private:
     GPS *_gps;
     Baro *_baro;
     IMU *_imu;
+
+
+   private:
     Matrix<float, 2, 2> F;  // State transition matrix
     Vector2f B;             // Control input matrix
     Matrix<float, 2, 2> P;  // Error covariance matrix
